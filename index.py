@@ -58,7 +58,7 @@ def correr_websocket_en_segundo_plano():
                         if not es_venta:
                             st.session_state["cvd_real"] += cantidad
                         else:
-                            st.session_state["cvd_real"] -= quantity
+                            st.session_state["cvd_real"] -= cantidad
             except Exception:
                 await asyncio.sleep(2)
                 
