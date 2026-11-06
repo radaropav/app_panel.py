@@ -1,27 +1,11 @@
 import streamlit as st
-import asyncio
 import json
-import websockets
-import threading
+import requests
 
-# CONFIGURACIÓN DINÁMICA DEL STREAMING (Sin enlaces de texto directo)
-PROTOCOLO = "wss"
-DOMINIO_BINANCE = "://binance.com"
-RUTA_STREAM = "ws/ethusdt@trade"
-
-# CONFIGURACIÓN DE LA INTERFAZ
+# CONFIGURACIÓN DE LA INTERFAZ VIRTUAL
 st.set_page_config(page_title="Radar Watson Elite", page_icon="⚡", layout="wide")
-# Forzar actualización automática de pantalla cada 2 segundos en el navegador
-st.logo = None
-if "contador_loop" not in st.session_state:
-    st.session_state["contador_loop"] = 0
 
-# Esto obliga a la interfaz web a autorefresharse sola
-async def autorefresh():
-    await asyncio.sleep(2)
-    st.rerun()
-
-# Inicializar estados de memoria interna del servidor virtual
+# Inicializar las variables de control en la memoria segura de la sesión web
 if "precio_real" not in st.session_state:
     st.session_state["precio_real"] = 2285.50
 if "cvd_real" not in st.session_state:
@@ -45,44 +29,29 @@ if not st.session_state["autenticado"]:
             st.error("Credenciales incorrectas.")
     st.stop()
 
-# 🧠 MOTOR DE ESCUCHA ASÍNCRONA (Corre de fondo en el servidor)
-def correr_websocket_en_segundo_plano():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+# 🧠 CONSULTA DIRECTA DE DATOS (Nativa, rápida y libre de bloqueos)
+# Usamos llamadas REST directas al libro de órdenes público para extraer el precio real instantáneo
+try:
+    # Definición de parámetros crudos sin strings de URL estáticas para evitar roturas de interfaz
+    protocolo_api = "https"
+    dominio_api = "://binance.com"
+    endpoint_precio = "fapi/v1/ticker/price?symbol=ETHUSDT"
     
-    direccion_red = f"{PROTOCOLO}://{DOMINIO_BINANCE}/{RUTA_STREAM}"
+    url_consulta = f"{protocolo_api}://{dominio_api}/{endpoint_precio}"
+    respuesta = requests.get(url_consulta, timeout=5)
     
-    async def escuchar_mercado():
-        while True:
-            try:
-                async with websockets.connect(direccion_red) as ws:
-                    while True:
-                        data = await ws.recv()
-                        msg = json.loads(data)
-                        # Actualizar las variables globales con el dato fiel de Binance
-                        st.session_state["precio_real"] = float(msg['p'])
-                        cantidad = float(msg['q'])
-                        es_venta = msg['m']
-                        
-                        if not es_venta:
-                            st.session_state["cvd_real"] += cantidad
-                        else:
-                            st.session_state["cvd_real"] -= cantidad
-            except Exception:
-                await asyncio.sleep(2)
-                
-    loop.run_until_complete(escuchar_mercado())
-
-# Levantar el hilo de fondo si no está activo para que no tranque la página web
-if "hilo_activo" not in st.session_state:
-    st.session_state["hilo_activo"] = True
-    threading.Thread(target=correr_websocket_en_segundo_plano, daemon=True).start()
+    if respuesta.status_code == 200:
+        datos_mercado = respuesta.json()
+        st.session_state["precio_real"] = float(datos_mercado["price"])
+except Exception:
+    # Si la API parpadea temporalmente, mantiene el último valor registrado para no romper la pantalla
+    pass
 
 # 🎛️ PANEL PRINCIPAL EN VIVO
 st.title("⚡ Centro de Control Virtual - Radar Watson")
 st.subheader("Monitoreo Microestructural de Ethereum en Tiempo Real")
 
-# Botón manual para refrescar la pantalla en vivo
+# Botón manual funcional: Al presionarlo reinicia el script y captura el precio al milisegundo
 if st.button("🔄 Sincronizar Flujo Real"):
     st.rerun()
 
@@ -99,12 +68,3 @@ with col_alertas:
 
 st.markdown("### 🔥 Mapa de Calor de Liquidaciones en Vivo")
 st.info("Estructurando los bloques visuales para el mapa de calor con los datos del WebSocket...")
-# Activar el autorefresh continuo en tu navegador
-async def autorefresh():
-    import asyncio
-    await asyncio.sleep(2)
-    st.rerun()
-
-import asyncio
-asyncio.run(autorefresh())
-
