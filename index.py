@@ -99,3 +99,12 @@ with col_alertas:
 
 st.markdown("### 🔥 Mapa de Calor de Liquidaciones en Vivo")
 st.info("Estructurando los bloques visuales para el mapa de calor con los datos del WebSocket...")
+# Activar el autorefresh continuo en tu navegador
+async def autorefresh():
+    import asyncio
+    await asyncio.sleep(2)
+    st.rerun()
+
+import asyncio
+asyncio.run(autorefresh())
+
