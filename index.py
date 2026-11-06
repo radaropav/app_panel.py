@@ -11,6 +11,15 @@ RUTA_STREAM = "ws/ethusdt@trade"
 
 # CONFIGURACIÓN DE LA INTERFAZ
 st.set_page_config(page_title="Radar Watson Elite", page_icon="⚡", layout="wide")
+# Forzar actualización automática de pantalla cada 2 segundos en el navegador
+st.logo = None
+if "contador_loop" not in st.session_state:
+    st.session_state["contador_loop"] = 0
+
+# Esto obliga a la interfaz web a autorefresharse sola
+async def autorefresh():
+    await asyncio.sleep(2)
+    st.rerun()
 
 # Inicializar estados de memoria interna del servidor virtual
 if "precio_real" not in st.session_state:
